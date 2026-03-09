@@ -16,6 +16,11 @@ export default function Dashboard() {
   const [account, setAccount] = useState('');
   const [instructions, setInstructions] = useState('');
 
+  // Edit Modal State
+  const [editRecord, setEditRecord] = useState<any>(null);
+  const [editFields, setEditFields] = useState({ caption: '', hashtags: '', cta: '', status: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
   const fetchRecords = async () => {
     setLoading(true);
     try {
@@ -44,8 +49,8 @@ export default function Dashboard() {
 
     setUploading(true);
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('Platform Selection', platform);
+    formData.append('Upload Image or Video', file);
+    formData.append('Platform Target', platform);
     formData.append('Account Name', account);
     if (instructions) formData.append('Instructions', instructions);
 
@@ -75,6 +80,41 @@ export default function Dashboard() {
       case 'draft': return 'bg-gray-100 text-gray-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
+  };
+
+  const handleEditClick = (record: any) => {
+    setEditRecord(record);
+    setEditFields({
+      caption: record.fields?.Caption || '',
+      hashtags: record.fields?.Hashtags || '',
+      cta: record.fields?.CTA || '',
+      status: record.fields?.Status || 'Draft',
+    });
+  };
+
+  const saveEdits = async () => {
+    if (!editRecord) return;
+    setIsSaving(true);
+    try {
+      const res = await axios.patch('/api/airtable', {
+        id: editRecord.id,
+        fields: {
+          Caption: editFields.caption,
+          Hashtags: editFields.hashtags,
+          CTA: editFields.cta,
+          Status: editFields.status
+        }
+      });
+      if (res.data.success) {
+        alert("Content saved successfully!");
+        setEditRecord(null);
+        fetchRecords(); // Refresh the table
+      }
+    } catch (err) {
+      console.error('Failed to save edits', err);
+      alert("Error saving edits");
+    }
+    setIsSaving(false);
   };
 
   return (
@@ -229,15 +269,18 @@ export default function Dashboard() {
                       records.map((record, idx) => (
                         <tr key={record.id || idx} className="border-b border-gray-100 hover:bg-gray-50 transition">
                           <td className="p-4 text-sm text-gray-800 font-medium">{record.fields?.['File Name'] || 'Video Upload'}</td>
-                          <td className="p-4 text-sm text-gray-600">{record.fields?.['Platform Selection'] || 'Unknown'}</td>
-                          <td className="p-4 text-sm text-gray-600 max-w-xs truncate">{record.fields?.['Generated Caption'] || 'Processing...'}</td>
+                          <td className="p-4 text-sm text-gray-600">{record.fields?.['Platform'] || 'Unknown'}</td>
+                          <td className="p-4 text-sm text-gray-600 max-w-xs truncate">{record.fields?.['Caption'] || 'Processing...'}</td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(record.fields?.Status)}`}>
                               {record.fields?.Status || 'Draft'}
                             </span>
                           </td>
                           <td className="p-4">
-                            <button className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-sm font-medium transition">
+                            <button
+                              onClick={() => handleEditClick(record)}
+                              className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-sm font-medium transition"
+                            >
                               Review & Edit
                             </button>
                           </td>
@@ -255,6 +298,91 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">Pending Feature</h2>
             <p>This module is currently awaiting social API approval to be fully connected.</p>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {editRecord && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 flex flex-col gap-6 relative">
+              <button
+                onClick={() => setEditRecord(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 font-bold text-xl"
+              >✕</button>
+
+              <h2 className="text-2xl font-semibold text-gray-800 border-b pb-4">
+                Review & Edit Content
+              </h2>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-gray-500">Video / Image Link:</span>
+                <a href={editRecord.fields?.['Drive Link']} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline break-all text-sm">
+                  {editRecord.fields?.['Drive Link'] || 'No preview available'}
+                </a>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Caption</label>
+                <textarea
+                  rows={4}
+                  value={editFields.caption}
+                  onChange={(e) => setEditFields({ ...editFields, caption: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full text-black"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Hashtags</label>
+                <textarea
+                  rows={2}
+                  value={editFields.hashtags}
+                  onChange={(e) => setEditFields({ ...editFields, hashtags: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full text-black"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Call to Action (CTA)</label>
+                <input
+                  type="text"
+                  value={editFields.cta}
+                  onChange={(e) => setEditFields({ ...editFields, cta: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full text-black"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Approval Status</label>
+                <select
+                  value={editFields.status}
+                  onChange={(e) => setEditFields({ ...editFields, status: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full text-black"
+                >
+                  <option value="Draft">Draft</option>
+                  <option value="Needs Review">Needs Review</option>
+                  <option value="Ready to Post">Ready to Post (Approve)</option>
+                  <option value="Scheduled">Scheduled</option>
+                </select>
+              </div>
+
+              <div className="flex gap-4 justify-end border-t pt-4">
+                <button
+                  onClick={() => setEditRecord(null)}
+                  className="px-6 py-2 rounded-lg text-gray-600 hover:bg-gray-100 font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEdits}
+                  disabled={isSaving}
+                  className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition flex items-center gap-2"
+                >
+                  {isSaving && <Loader2 className="animate-spin" size={16} />}
+                  Save Changes
+                </button>
+              </div>
+
+            </div>
           </div>
         )}
 

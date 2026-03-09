@@ -13,9 +13,6 @@ export async function GET() {
         const response = await axios.get(AIRTABLE_API_URL, {
             headers: {
                 Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-            },
-            params: {
-                sort: [{ field: 'Created Time', direction: 'desc' }], // Example sort
             }
         });
 

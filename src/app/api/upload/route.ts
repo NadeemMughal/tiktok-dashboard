@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         // The user will upload a file and fill in some fields like Platform, Account, Instruction
-        const file = formData.get('file') as Blob;
+        const file = formData.get('Upload Image or Video') as Blob;
 
         if (!file) {
             return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
@@ -17,11 +17,11 @@ export async function POST(request: Request) {
         // Create axios form data
         const axiosForm = new FormData();
         // append file, platform, etc.
-        axiosForm.append('file', buffer, { filename: (file as any).name || 'upload.mp4', contentType: file.type });
+        axiosForm.append('Upload Image or Video', buffer, { filename: (file as any).name || 'upload.mp4', contentType: file.type });
 
         // Append the other form fields from the original formData
         for (const [key, value] of Array.from(formData.entries())) {
-            if (key !== 'file') {
+            if (key !== 'Upload Image or Video') {
                 axiosForm.append(key, value as string);
             }
         }
