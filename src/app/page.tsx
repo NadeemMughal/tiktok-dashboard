@@ -55,16 +55,14 @@ export default function Dashboard() {
     if (instructions) formData.append('Instructions', instructions);
 
     try {
-      const res = await axios.post('/api/upload', formData, {
+      const n8nWebhookUrl = 'https://n8n.srv829343.hstgr.cloud/webhook/45e92613-385d-4684-a649-9b381e26bab7';
+      const res = await axios.post(n8nWebhookUrl, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (res.data.success) {
-        alert("Upload successful! AI processing started.");
-        setFile(null); setPlatform(''); setAccount(''); setInstructions('');
-        setActiveTab('library');
-      } else {
-        alert("Upload failed. Try again.");
-      }
+      // n8n returns a response, we'll assume success if it doesn't throw
+      alert("Upload successful! AI processing started.");
+      setFile(null); setPlatform(''); setAccount(''); setInstructions('');
+      setActiveTab('library');
     } catch (err) {
       console.error('Upload Error:', err);
       alert("An error occurred during upload.");
