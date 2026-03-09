@@ -47,8 +47,9 @@ export default function Dashboard() {
       return;
     }
 
-    if (file.size > 4.4 * 1024 * 1024) {
-      alert("⚠️ File Too Large!\n\nThe current Dashboard is hosted on a Free Vercel Server, which has a strict 4.5MB upload limit per request.\n\nPlease upload a compressed image or upgrade the server plan for large video files.");
+    const MAX_SIZE = 4 * 1024 * 1024; // 4MB maximum
+    if (file.size > MAX_SIZE) {
+      alert("⚠️ FILE TOO LARGE: The uploaded file is " + (file.size / (1024 * 1024)).toFixed(2) + " MB.\n\nDue to Vercel's Free Tier restrictions, you cannot upload files larger than 4 MB. Please select a smaller file.");
       return;
     }
 
