@@ -47,6 +47,11 @@ export default function Dashboard() {
       return;
     }
 
+    if (file.size > 4.4 * 1024 * 1024) {
+      alert("⚠️ File Too Large!\n\nThe current Dashboard is hosted on a Free Vercel Server, which has a strict 4.5MB upload limit per request.\n\nPlease upload a compressed image or upgrade the server plan for large video files.");
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('Upload Image or Video', file);
@@ -55,15 +60,17 @@ export default function Dashboard() {
     if (instructions) formData.append('Instructions', instructions);
 
     try {
-      const n8nWebhookUrl = 'https://n8n.srv829343.hstgr.cloud/webhook/45e92613-385d-4684-a649-9b381e26bab7';
-      const res = await axios.post(n8nWebhookUrl, formData, {
+      const res = await axios.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      // n8n returns a response, we'll assume success if it doesn't throw
-      alert("Upload successful! AI processing started.");
-      setFile(null); setPlatform(''); setAccount(''); setInstructions('');
-      setActiveTab('library');
-    } catch (err) {
+      if (res.data.success) {
+        alert("Upload successful! AI processing started.");
+        setFile(null); setPlatform(''); setAccount(''); setInstructions('');
+        setActiveTab('library');
+      } else {
+        alert("Upload failed. Try again.");
+      }
+    } catch (err: any) {
       console.error('Upload Error:', err);
       alert("An error occurred during upload.");
     }
